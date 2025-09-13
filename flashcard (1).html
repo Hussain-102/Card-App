@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="ar" dir="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق البطاقات التعليمية</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #f0f0f0;
+            --primary-dark: #cccccc;
+            --text-color: #f0f0f0;
+            --background-color: #141f25;
+            --card-bg: #0c1118;
+            --border-color: #444444;
+            --easy-color: #4caf50;
+            --medium-color: #2196f3;
+            --hard-color: #ff9800;
+            --very-hard-color: #f44336;
+            --box-inside-box1: #243447;
+            --box-inside-box2: #818cf8;
+            --btn-add-folder-bg: #6366f1;
+            --btn-add-folder-hover: #243447;
+            --btn-add-card-bg: #192532;
+            --btn-add-card-hover: #818cf8;
+            --nav-bg: #141e25;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --primary-color: #6a1b9a;
+                --primary-dark: #4a148c;
+                --text-color: #333;
+                --background-color: #f5f5f5;
+                --card-bg: #fff;
+                --border-color: #ddd;
+                --nav-bg: #e0e0e0;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            overflow-x: hidden;
+            font-size: 16px;
+        }
+
+        .container {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .top-nav {
+            background-color: var(--nav-bg);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+        }
+
+        .bottom-nav {
+            display: none; /* Hidden on desktop */
+        }
+        
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+        }
+
+        .btn-danger {
+            background-color: var(--very-hard-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .card-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .card-item {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            cursor: pointer;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-item.selected {
+            border: 2px solid var(--box-inside-box2);
+            box-shadow: 0 0 10px var(--box-inside-box2);
+        }
+        
+        .flashcard-selection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .card-item.selected .flashcard-selection-overlay {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .flashcard-actions {
+            position: absolute;
+            top: 8px;
+            inset-inline-end: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .card-item.selected .flashcard-actions,
+        .card-item:hover .flashcard-actions {
+            opacity: 1;
+        }
+
+        .flashcard-actions button {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        .flashcard-actions button:hover {
+            opacity: 1;
+        }
+        
+        .card-item h3 {
+            margin-top: 0;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        /* Rich Text Editor Styling */
+        .rich-text-editor {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 120px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .rich-text-editor pre {
+            background-color: var(--box-inside-box1);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .rich-text-toolbar {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .rich-text-toolbar button {
+            background-color: var(--box-inside-box1);
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-color);
+        }
+        
+        .rich-text-toolbar button:hover {
+            background-color: var(--box-inside-box2);
+        }
+
+        .rich-text-toolbar select {
+            background-color: var(--box-inside-box1);
+            border: none;
+            border-radius: 8px;
+            padding: 6px;
+            font-size: 13px;
+            color: var(--text-color);
+        }
+
+        .test-mode {
+            text-align: center;
+        }
+
+        .test-card {
+            width: 100%;
+            max-width: 500px;
+            margin: 15px auto;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            min-height: 250px;
+            position: relative;
+        }
+        
+        .test-card h3 {
+            font-size: 2em;
+        }
+
+        .test-card-content {
+            display: none;
+            margin-top: 15px;
+            text-align: start;
+        }
+
+        .test-card.revealed .test-card-content {
+            display: block;
+        }
+        
+        .test-card-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .evaluation-buttons {
+            display: none;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 12px;
+        }
+
+        .evaluation-buttons.show {
+            display: flex;
+        }
+        
+        .evaluation-buttons .btn {
+            font-size: 12px;
+        }
+
+        .search-bar {
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            width: 100%;
+            font-size: 14px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+        
+        .breadcrumbs {
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column-reverse;
+                font-size: 14px;
+            }
+            .top-nav {
+                display: none;
+            }
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background-color: var(--nav-bg);
+                justify-content: space-around;
+                padding: 8px 0;
+                box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+                z-index: 100;
+            }
+            .main-content {
+                padding-bottom: 60px; /* To prevent content from being hidden behind the nav bar */
+            }
+            .nav-btn {
+                font-size: 12px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 350px;
+            text-align: center;
+        }
+        
+        .full-card-modal .modal-content, .move-cards-modal .modal-content, .reorder-modal .modal-content {
+            text-align: start;
+            width: 95%;
+            max-width: 600px;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        /* New full card modal styles */
+        .full-card-modal {
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .full-card-modal-content {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 600px;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .full-card-modal-content h2 {
+            margin-top: 0;
+            font-size: 1.8em;
+            color: var(--text-color);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .field-box {
+            background-color: #192532;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #37475a;
+        }
+        
+        .full-card-modal-content pre {
+            background-color: var(--box-inside-box1);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            color: #ddd;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .full-card-modal-content code {
+            color: var(--text-color);
+        }
+
+        .highlight {
+            background-color: yellow;
+            color: black;
+            font-weight: bold;
+        }
+        
+        /* New Button Container */
+        .add-buttons-container {
+            background-color: #0b1219;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .btn-add-folder {
+            background-color: #192532;
+            color: var(--text-color);
+            flex-grow: 1;
+        }
+        
+        .btn-add-folder:hover {
+            background-color: #818cf8;
+        }
+
+        .btn-add-card {
+            background-color: #6366f1;
+            color: var(--text-color);
+            flex-grow: 1;
+        }
+        
+        .btn-add-card:hover {
+            background-color: #243447;
+        }
+        
+        .nav-btn .fa-solid {
+            font-size: 20px;
+        }
+        
+        .field-label {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        .folder-list {
+            margin-top: 15px;
+        }
+        
+        .folder-item {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .folder-item.selected, .folder-item:hover {
+            background-color: var(--box-inside-box1);
+        }
+        
+        .folder-item:not(.selected) {
+            opacity: 0.3;
+        }
+
+
+        .folder-item input[type="checkbox"] {
+            margin-inline-end: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--box-inside-box2);
+        }
+        
+        .card-checkbox {
+            position: absolute;
+            top: 10px;
+            inset-inline-start: 10px;
+            z-index: 10;
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Reorder Modal specific styles */
+        #reorderList {
+            list-style: none;
+            padding: 0;
+        }
+        #reorderList li {
+            background-color: var(--box-inside-box1);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: grab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #reorderList li:hover {
+            background-color: var(--box-inside-box2);
+        }
+        #reorderList li i {
+            margin-inline-end: 10px;
+        }
+        
+        #reorder-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body dir="auto">
+    <!-- Top Navigation (Desktop) -->
+    <div class="top-nav">
+        <h1 style="font-size: 20px; margin: 0; color: var(--text-color);">بطاقاتي</h1>
+        <button class="nav-btn active" onclick="showView('mainView')"><i class="fas fa-home"></i> الرئيسية</button>
+        <button class="nav-btn" onclick="showTestSetup()"><i class="fas fa-graduation-cap"></i> الاختبار</button>
+        <button class="nav-btn" onclick="showView('settingsView')"><i class="fas fa-cog"></i> الإعدادات</button>
+        <button class="nav-btn" onclick="showView('reportsView')"><i class="fas fa-chart-line"></i> التقارير</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div id="mainView" style="display: none;">
+            <div class="breadcrumbs" id="breadcrumbs"></div>
+            <div id="selection-bar" style="display:none; background-color: var(--box-inside-box1); padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+                <button class="btn btn-secondary" onclick="moveSelectedCards()">نقل <span id="selected-count">0</span> بطاقة</button>
+                <button class="btn btn-danger" onclick="deleteSelectedCards()">حذف <span id="selected-delete-count">0</span> بطاقة</button>
+                <button class="btn btn-secondary" onclick="deselectAll()">إلغاء التحديد</button>
+            </div>
+            <input type="text" id="searchInput" class="search-bar" placeholder="بحث عن البطاقات...">
+            <div class="add-buttons-container">
+                <button class="btn btn-add-card" onclick="showAddCardForm()"><i class="fas fa-plus-circle"></i> إضافة بطاقة جديدة</button>
+                <button class="btn btn-add-folder" onclick="showAddFolderForm()"><i class="fas fa-folder-plus"></i> إضافة مجلد جديد</button>
+            </div>
+            <div id="cardsList" class="card-list" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            <div id="noCards" style="text-align: center; margin-top: 50px; opacity: 0.6; display: none;">
+                <i class="fas fa-search" style="font-size: 50px;"></i>
+                <p style="font-size: 18px;">لا توجد عناصر لعرضها في هذا المجلد.</p>
+            </div>
+        </div>
+
+        <!-- Add/Edit Card Form -->
+        <div id="addCardView" style="display: none;">
+            <h2 id="cardFormTitle">إضافة بطاقة جديدة</h2>
+            <form id="cardForm">
+                <input type="hidden" id="cardId">
+                <div class="form-group">
+                    <label for="term">المصطلح:</label>
+                    <input type="text" id="term" class="form-control" required dir="auto">
+                </div>
+                <div class="form-group">
+                    <label for="definition">التعريف:</label>
+                    <textarea id="definition" class="form-control" rows="3" required dir="auto"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="example">مثال:</label>
+                    <textarea id="example" class="form-control" rows="3" dir="auto"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notes">ملاحظات (Rich Text):</label>
+                    <div class="rich-text-toolbar" style="background-color: var(--card-bg); border: none; border-radius: 8px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <button type="button" onclick="formatDoc('bold')"><i class="fas fa-bold"></i></button>
+                        <button type="button" onclick="formatDoc('italic')"><i class="fas fa-italic"></i></button>
+                        <select onchange="formatDoc('fontSize', this.value)">
+                            <option value="1">صغير</option>
+                            <option value="2">عادي</option>
+                            <option value="3">متوسط</option>
+                            <option value="4">كبير</option>
+                            <option value="5">أكبر</option>
+                        </select>
+                        <select onchange="formatDoc('formatBlock', this.value)">
+                            <option value="p">فقرة</option>
+                            <option value="h1">عنوان 1</option>
+                            <option value="h2">عنوان 2</option>
+                            <option value="h3">عنوان 3</option>
+                        </select>
+                        <input type="color" onchange="formatDoc('foreColor', this.value)" title="لون النص" style="background-color: transparent; border: none;">
+                        <input type="file" id="imageInput" accept="image/*" onchange="insertImage(event)" style="display: none;">
+                        <button type="button" onclick="document.getElementById('imageInput').click()"><i class="fas fa-image"></i></button>
+                        <button type="button" onclick="insertCodeBlock()"><i class="fas fa-code"></i></button>
+                    </div>
+                    <div id="notes" class="rich-text-editor" contenteditable="true" dir="auto"></div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveCardBtn">حفظ البطاقة</button>
+                <button type="button" class="btn btn-secondary" onclick="showView('mainView')">إلغاء</button>
+            </form>
+        </div>
+
+        <!-- Full Card Modal -->
+        <div id="fullCardModal" class="full-card-modal">
+            <div class="full-card-modal-content">
+                <div class="full-card-actions" style="position: absolute; top: 15px; inset-inline-end: 15px;">
+                    <button class="btn" style="background: none; color: #4a90e2;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#f0f0f0'" onclick="editFullCard();"><i class="fas fa-edit"></i></button>
+                    <button class="btn" style="background: none; color: #d0021b;" onmouseover="this.style.color='#f44336'" onmouseout="this.style.color='#f0f0f0'" onclick="hideFullCardModal(); deleteCard(currentCard.id);"><i class="fas fa-trash"></i></button>
+                    <button class="btn" style="background: none; color: #f0f0f0;" onmouseover="this.style.color='#cccccc'" onmouseout="this.style.color='#f0f0f0'" onclick="hideFullCardModal()"><i class="fas fa-times"></i></button>
+                </div>
+                <h2 id="fullCardTerm"></h2>
+                
+                <h3 class="field-label" id="label-definition">التعريف</h3>
+                <div id="fullCardDefinition" class="field-box"></div>
+                
+                <h3 class="field-label" id="label-example">المثال</h3>
+                <div id="fullCardExample" class="field-box"></div>
+                
+                <h3 class="field-label" id="label-notes">الملاحظات</h3>
+                <div id="fullCardNotes" class="field-box"></div>
+
+            </div>
+        </div>
+
+        <!-- Test Mode View -->
+        <div id="testModeView" style="display: none;" class="test-mode">
+            <h2>وضع الاختبار</h2>
+            
+            <div id="testSetupView">
+                <p>اختر المجلدات التي ترغب في الاختبار فيها:</p>
+                <div id="testFolderList" class="folder-list"></div>
+                <button class="btn btn-primary" id="startTestBtn">بدء الاختبار</button>
+            </div>
+            
+            <div id="testRunningView" style="display:none;">
+                <p id="testStatus"></p>
+                <div id="testCardContainer" class="test-card">
+                    <h3 id="testCardTerm" style="opacity: 0.2;"></h3>
+                    <div id="testCardContent" class="test-card-content">
+                        <h3 class="field-label" id="testLabelDefinition" style="display:none">التعريف</h3>
+                        <div id="testCardDefinition" class="field-box" style="display:none"></div>
+                        
+                        <h3 class="field-label" id="testLabelExample" style="display:none">المثال</h3>
+                        <div id="testCardExample" class="field-box" style="display:none"></div>
+                        
+                        <h3 class="field-label" id="testLabelNotes" style="display:none">الملاحظات</h3>
+                        <div id="testCardNotes" class="field-box" style="display:none"></div>
+                    </div>
+                </div>
+                <div id="testButtons" class="test-card-controls">
+                    <button class="btn btn-primary" id="revealAnswerBtn">إظهار الإجابة</button>
+                    <div id="evaluationButtons" class="evaluation-buttons">
+                        <button class="btn" style="background-color: var(--easy-color);" onclick="evaluateCard('easy')">سهل</button>
+                        <button class="btn" style="background-color: var(--medium-color);" onclick="evaluateCard('medium')">متوسط</button>
+                        <button class="btn" style="background-color: var(--hard-color);" onclick="evaluateCard('hard')">صعب</button>
+                        <button class="btn" style="background-color: var(--very-hard-color);" onclick="evaluateCard('very-hard')">صعب جداً</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reports View -->
+        <div id="reportsView" style="display: none;">
+            <h2>التقارير والإحصائيات</h2>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="background-color: var(--card-bg); padding: 20px; border-radius: 8px;">
+                    <h3>ملخص التقارير</h3>
+                    <p>إجمالي البطاقات: <span id="totalCardsCount">0</span></p>
+                    <p>بطاقات للمراجعة اليوم: <span id="dueCardsCount">0</span></p>
+                </div>
+                <div style="background-color: var(--card-bg); padding: 20px; border-radius: 8px;">
+                    <h3>توزيع البطاقات حسب الصعوبة</h3>
+                    <canvas id="difficultyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings View -->
+        <div id="settingsView" style="display:none;" class="settings-view">
+            <h2>الإعدادات</h2>
+            <p>يمكنك إدارة بياناتك من هنا.</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="exportData()"><i class="fas fa-upload"></i> تصدير</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()"><i class="fas fa-download"></i> استيراد</button>
+                <input type="file" id="file-input" style="display: none;" accept=".json" onchange="importData(event)">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation (Mobile) -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showView('mainView')"><i class="fas fa-home"></i><br>الرئيسية</button>
+        <button class="nav-btn" onclick="showTestSetup()"><i class="fas fa-graduation-cap"></i><br>الاختبار</button>
+        <button class="nav-btn" onclick="showView('settingsView')"><i class="fas fa-cog"></i><br>الإعدادات</button>
+        <button class="nav-btn" onclick="showView('reportsView')"><i class="fas fa-chart-line"></i><br>التقارير</button>
+    </div>
+    
+    <!-- Custom Modals -->
+    <div id="inputModal" class="modal">
+        <div class="modal-content">
+            <h3 id="inputModalTitle"></h3>
+            <input type="text" id="inputModalField" class="form-control" dir="auto">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="inputModalOkBtn">تأكيد</button>
+                <button class="btn btn-secondary" id="inputModalCancelBtn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="confirmModalTitle"></h3>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" id="confirmModalYesBtn">نعم</button>
+                <button class="btn btn-secondary" id="confirmModalNoBtn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="moveCardsModal" class="modal">
+        <div class="modal-content">
+            <h3>اختر المجلد لنقل البطاقات إليه</h3>
+            <div id="moveFolderList" class="folder-list"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="moveCardsBtn">نقل</button>
+                <button class="btn btn-secondary" onclick="hideMoveCardsModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Reorder Modal -->
+    <div id="reorderModal" class="modal">
+        <div class="modal-content reorder-modal">
+            <h3>إعادة ترتيب البطاقات</h3>
+            <ul id="reorderList"></ul>
+            <div id="reorder-controls">
+                <button class="btn btn-primary" onclick="saveReorder()">حفظ الترتيب</button>
+                <button class="btn btn-secondary" onclick="hideReorderModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const STORAGE_KEY_CARDS = 'flashcards_cards';
+        const STORAGE_KEY_FOLDERS = 'flashcards_folders';
+        
+        let currentView = 'mainView';
+        let currentFolderId = 'root';
+        let currentCard = null;
+        let testCards = [];
+        let currentTestCardIndex = 0;
+        let allFolders = [];
+        let allCards = [];
+        let difficultyChart = null;
+        let selectedTestFolders = [];
+        let selectedCards = new Set();
+        let selectionMode = false;
+        
+        // Save data to localStorage
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY_CARDS, JSON.stringify(allCards));
+                localStorage.setItem(STORAGE_KEY_FOLDERS, JSON.stringify(allFolders));
+            } catch (e) {
+                console.error("Error saving to localStorage:", e);
+            }
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            try {
+                const cardsData = localStorage.getItem(STORAGE_KEY_CARDS);
+                const foldersData = localStorage.getItem(STORAGE_KEY_FOLDERS);
+                allCards = cardsData ? JSON.parse(cardsData) : [];
+                allFolders = foldersData ? JSON.parse(foldersData) : [];
+                
+                // If there are no folders, create the default one.
+                if (allFolders.length === 0) {
+                    const defaultFolder = { id: 'root', name: 'البطاقات الرئيسية', type: 'collection', parentId: null };
+                    allFolders = [defaultFolder];
+                    saveData();
+                }
+            } catch (error) {
+                console.error("Error loading data from localStorage:", error);
+                allCards = [];
+                allFolders = [{ id: 'root', name: 'البطاقات الرئيسية', type: 'collection', parentId: null }];
+            }
+        }
+
+        function getPath(folderId) {
+            const path = [];
+            let current = allFolders.find(f => f.id === folderId);
+            while (current) {
+                path.unshift(current);
+                current = allFolders.find(f => f.id === current.parentId);
+            }
+            return path;
+        }
+
+        function renderBreadcrumbs() {
+            const breadcrumbsDiv = document.getElementById('breadcrumbs');
+            const path = getPath(currentFolderId);
+            breadcrumbsDiv.innerHTML = '';
+
+            path.forEach((folder, index) => {
+                const link = document.createElement('a');
+                link.href = '#';
+                link.innerText = folder.name;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    navigate(folder.id);
+                };
+                breadcrumbsDiv.appendChild(link);
+                if (index < path.length - 1) {
+                    const span = document.createElement('span');
+                    span.innerText = ' / ';
+                    breadcrumbsDiv.appendChild(span);
+                }
+            });
+        }
+
+        async function navigate(folderId) {
+            currentFolderId = folderId;
+            await renderMainContent();
+        }
+
+        async function renderMainContent() {
+            loadData();
+            renderBreadcrumbs();
+            const list = document.getElementById('cardsList');
+            const noCardsMessage = document.getElementById('noCards');
+            list.innerHTML = '';
+
+            const items = allFolders.filter(f => f.parentId === currentFolderId);
+            const cards = allCards.filter(c => c.folderId === currentFolderId);
+            
+            if (items.length === 0 && cards.length === 0) {
+                noCardsMessage.style.display = 'block';
+            } else {
+                noCardsMessage.style.display = 'none';
+            }
+
+            items.forEach(item => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card-item';
+                cardElement.setAttribute('dir', 'auto');
+                cardElement.dataset.id = item.id;
+                cardElement.dataset.type = 'folder';
+                cardElement.innerHTML = `
+                    <div class="flashcard-actions">
+                        <button onclick="event.stopPropagation(); showConfirmModal('هل أنت متأكد من حذف هذا المجلد وكل ما فيه؟', () => deleteFolder('${item.id}'))"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <i class="fas ${item.type === 'collection' ? 'fa-book' : 'fa-folder'}" style="font-size: 50px; text-align: center; margin-bottom: 10px;"></i>
+                    <h3 dir="auto">${item.name}</h3>
+                `;
+                cardElement.onclick = () => navigate(item.id);
+                list.appendChild(cardElement);
+            });
+            
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card-item flashcard';
+                cardElement.setAttribute('dir', 'auto');
+                cardElement.onclick = () => showFullCardModal(card.id);
+
+                cardElement.innerHTML = `
+                    <div class="flashcard-actions">
+                        <button onclick="event.stopPropagation(); editCard('${card.id}')"><i class="fas fa-edit"></i></button>
+                        <button onclick="event.stopPropagation(); deleteCard('${card.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <h3 dir="auto">${card.term}</h3>
+                `;
+                list.appendChild(cardElement);
+            });
+            
+            // Add a select/reorder button to main view
+            const mainView = document.getElementById('mainView');
+            if (currentFolderId !== 'root') {
+                let reorderButton = document.getElementById('reorder-button');
+                if (!reorderButton) {
+                    reorderButton = document.createElement('button');
+                    reorderButton.id = 'reorder-button';
+                    reorderButton.className = 'btn btn-secondary';
+                    reorderButton.style.marginTop = '15px';
+                    reorderButton.innerHTML = `<i class="fas fa-sort"></i> إعادة ترتيب`;
+                    reorderButton.onclick = showReorderModal;
+                    mainView.insertBefore(reorderButton, list);
+                }
+            } else {
+                const reorderButton = document.getElementById('reorder-button');
+                if (reorderButton) {
+                    reorderButton.remove();
+                }
+            }
+
+
+            showView('mainView');
+        }
+
+        function deleteFolder(folderId) {
+            allFolders = allFolders.filter(f => f.id !== folderId);
+            allCards = allCards.filter(c => c.folderId !== folderId);
+            saveData();
+            renderMainContent();
+        }
+
+        // دالة لعرض البطاقة الكاملة في modal
+        function showFullCardModal(cardId) {
+            loadData();
+            const card = allCards.find(c => c.id === cardId);
+            if (!card) {
+                console.error("Card not found:", cardId);
+                return;
+            }
+            
+            currentCard = card;
+            document.getElementById('fullCardTerm').innerText = card.term;
+            
+            const fields = [
+                { id: 'fullCardDefinition', title: 'التعريف', content: card.definition },
+                { id: 'fullCardExample', title: 'المثال', content: card.example },
+                { id: 'fullCardNotes', title: 'الملاحظات', content: card.notes }
+            ];
+
+            fields.forEach(field => {
+                const element = document.getElementById(field.id);
+                const label = document.getElementById(`label-${field.id.split('fullCard')[1].toLowerCase()}`);
+                
+                if (field.content && field.content.trim() !== '') {
+                    element.innerHTML = field.content;
+                    element.style.display = 'block';
+                    if (label) label.style.display = 'block';
+                } else {
+                    element.style.display = 'none';
+                    if (label) label.style.display = 'none';
+                }
+            });
+
+            document.getElementById('fullCardModal').style.display = 'flex';
+        }
+
+        function hideFullCardModal() {
+            document.getElementById('fullCardModal').style.display = 'none';
+        }
+
+        // دالة لإدارة عرض النماذج والصفحات
+        function showView(viewId) {
+            const views = ['mainView', 'addCardView', 'fullCardView', 'testModeView', 'settingsView', 'reportsView'];
+            views.forEach(id => {
+                const view = document.getElementById(id);
+                if (view) {
+                    view.style.display = (id === viewId) ? 'block' : 'none';
+                }
+            });
+            
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            const selectedNavBtn = document.querySelector(`.nav-btn[onclick*="${viewId}"]`);
+            if (selectedNavBtn) {
+                selectedNavBtn.classList.add('active');
+            }
+            
+            currentView = viewId;
+        }
+        
+        function showAddCardForm() {
+            setupAddCardForm(null);
+        }
+        
+        function showAddFolderForm() {
+            showInputModal('أدخل اسم المجلد/المجموعة:', (name) => {
+                if (name) {
+                    const type = currentFolderId === 'root' ? 'collection' : 'folder';
+                    const newFolder = { id: `${type}-${Date.now()}`, name, type: type, parentId: currentFolderId };
+                    allFolders.push(newFolder);
+                    saveData();
+                    renderMainContent();
+                }
+            });
+        }
+
+        // دالة لإعداد نموذج إضافة بطاقة جديدة
+        function setupAddCardForm(card) {
+            document.getElementById('cardFormTitle').innerText = card ? 'تعديل البطاقة' : 'إضافة بطاقة جديدة';
+            document.getElementById('cardId').value = card ? card.id : '';
+            document.getElementById('term').value = card ? card.term : '';
+            document.getElementById('definition').value = card ? card.definition : '';
+            document.getElementById('example').value = card ? card.example : '';
+            document.getElementById('notes').innerHTML = card ? card.notes : '';
+            showView('addCardView');
+        }
+        
+        function editFullCard() {
+          if (currentCard) {
+            hideFullCardModal();
+            setupAddCardForm(currentCard);
+          }
+        }
+
+        // دالة لإضافة أو تعديل بطاقة
+        document.getElementById('cardForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('cardId').value;
+            const newCard = {
+                id: id || `card-${Date.now()}`,
+                term: document.getElementById('term').value,
+                definition: document.getElementById('definition').value,
+                example: document.getElementById('example').value,
+                notes: document.getElementById('notes').innerHTML,
+                folderId: currentFolderId,
+                repetition: 0,
+                interval: 1,
+                easiness: 2.5,
+                nextReview: Date.now()
+            };
+            
+            if (id) {
+                const index = allCards.findIndex(c => c.id === id);
+                if (index !== -1) allCards[index] = newCard;
+            } else {
+                allCards.push(newCard);
+            }
+            
+            saveData();
+            setupAddCardForm(null);
+            renderMainContent();
+        });
+
+        // دالة لتعديل بطاقة موجودة
+        function editCard(cardId) {
+            loadData();
+            const card = allCards.find(c => c.id === cardId);
+            if (card) {
+                setupAddCardForm(card);
+            }
+        }
+        
+        // دالة لحذف بطاقة
+        function deleteCard(cardId) {
+            showConfirmModal('هل أنت متأكد من حذف هذه البطاقة؟', () => {
+                allCards = allCards.filter(c => c.id !== cardId);
+                saveData();
+                renderMainContent();
+            });
+        }
+        
+        // دالة البحث
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const list = document.getElementById('cardsList');
+            const noCardsMessage = document.getElementById('noCards');
+            list.innerHTML = '';
+            
+            if (!searchTerm) {
+                renderMainContent();
+                return;
+            }
+            
+            loadData();
+            
+            const filteredCards = allCards.filter(c => 
+                c.term.toLowerCase().includes(searchTerm) || 
+                (c.definition && c.definition.toLowerCase().includes(searchTerm)) ||
+                (c.example && c.example.toLowerCase().includes(searchTerm)) ||
+                (c.notes && c.notes.toLowerCase().includes(searchTerm))
+            );
+            
+            if (filteredCards.length === 0) {
+                 noCardsMessage.style.display = 'block';
+            } else {
+                 noCardsMessage.style.display = 'none';
+                 
+                 filteredCards.forEach(card => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card-item flashcard';
+                    cardElement.setAttribute('dir', 'auto');
+                    cardElement.onclick = () => showFullCardModal(card.id);
+                    
+                    const highlightedTerm = highlightText(card.term, searchTerm);
+                    
+                    cardElement.innerHTML = `
+                        <div class="flashcard-actions">
+                            <button onclick="event.stopPropagation(); editCard('${card.id}')"><i class="fas fa-edit"></i></button>
+                            <button onclick="event.stopPropagation(); deleteCard('${card.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <h3 dir="auto">${highlightedTerm}</h3>
+                    `;
+                    list.appendChild(cardElement);
+                });
+            }
+        });
+
+        function highlightText(text, term) {
+            if (!text || !term) return text;
+            const regex = new RegExp(`(${term})`, 'gi');
+            return text.replace(regex, `<span class="highlight">$&</span>`);
+        }
+
+
+        // دوال التنسيق في محرر النصوص الغني
+        function formatDoc(command, value = null) {
+            document.execCommand(command, false, value);
+        }
+
+        function insertCodeBlock() {
+            const codeHtml = '<pre><code></code></pre>';
+            document.getElementById('notes').focus();
+            document.execCommand('insertHTML', false, codeHtml);
+        }
+        
+        function insertImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%';
+                    document.getElementById('notes').appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // دوال وضع الاختبار والتكرار المتباعد
+        function showTestSetup() {
+            loadData();
+            const folderList = document.getElementById('testFolderList');
+            folderList.innerHTML = '';
+            
+            selectedTestFolders = [];
+            const foldersAndCollections = allFolders.filter(f => f.id !== 'root');
+            
+            foldersAndCollections.forEach(folder => {
+                const folderItem = document.createElement('div');
+                folderItem.className = 'folder-item';
+                folderItem.setAttribute('data-folder-id', folder.id);
+                folderItem.innerHTML = `
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <i class="fas ${folder.type === 'collection' ? 'fa-book' : 'fa-folder'}" style="margin-inline-end: 10px;"></i>
+                        <span>${folder.name}</span>
+                    </label>
+                `;
+                folderItem.onclick = (e) => {
+                    e.currentTarget.classList.toggle('selected');
+                    const folderId = e.currentTarget.dataset.folderId;
+                    if (e.currentTarget.classList.contains('selected')) {
+                        selectedTestFolders.push(folderId);
+                    } else {
+                        selectedTestFolders = selectedTestFolders.filter(id => id !== folderId);
+                    }
+                     document.getElementById('startTestBtn').disabled = selectedTestFolders.length === 0;
+                };
+                folderList.appendChild(folderItem);
+            });
+            
+            const allCardsOption = document.createElement('div');
+            allCardsOption.className = 'folder-item';
+            allCardsOption.setAttribute('data-folder-id', 'all');
+            allCardsOption.innerHTML = `
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <i class="fas fa-clipboard-list" style="margin-inline-end: 10px;"></i>
+                    <span>جميع البطاقات</span>
+                </label>
+            `;
+             allCardsOption.onclick = (e) => {
+                const isSelected = e.currentTarget.classList.toggle('selected');
+                selectedTestFolders = [];
+                if (isSelected) {
+                    selectedTestFolders.push('all');
+                    document.querySelectorAll('#testFolderList .folder-item').forEach(item => {
+                        if (item.dataset.folderId !== 'all') {
+                            item.classList.remove('selected');
+                        }
+                    });
+                } else {
+                    selectedTestFolders = [];
+                }
+                document.getElementById('startTestBtn').disabled = selectedTestFolders.length === 0;
+             };
+            folderList.prepend(allCardsOption);
+            
+            document.getElementById('startTestBtn').disabled = selectedTestFolders.length === 0;
+            
+            showView('testModeView');
+            document.getElementById('testSetupView').style.display = 'block';
+            document.getElementById('testRunningView').style.display = 'none';
+        }
+        
+        document.getElementById('startTestBtn').onclick = () => {
+            let cardsToTest = [];
+            if (selectedTestFolders.includes('all')) {
+                cardsToTest = [...allCards];
+            } else {
+                const getCardsInFolderAndSubfolders = (folderId) => {
+                    let cards = allCards.filter(c => c.folderId === folderId);
+                    const subfolders = allFolders.filter(f => f.parentId === folderId);
+                    subfolders.forEach(sub => {
+                        cards = cards.concat(getCardsInFolderAndSubfolders(sub.id));
+                    });
+                    return cards;
+                };
+
+                selectedTestFolders.forEach(folderId => {
+                    const folderCards = getCardsInFolderAndSubfolders(folderId);
+                    cardsToTest = cardsToTest.concat(folderCards);
+                });
+            }
+            
+            testCards = cardsToTest.filter(card => card.nextReview <= Date.now()).sort((a, b) => a.nextReview - b.nextReview);
+
+            if (testCards.length === 0) {
+                document.getElementById('testStatus').innerText = 'لا توجد بطاقات للمراجعة في المجلدات المختارة.';
+                document.getElementById('testSetupView').style.display = 'block';
+                document.getElementById('testRunningView').style.display = 'none';
+                return;
+            }
+
+            currentTestCardIndex = 0;
+            document.getElementById('testStatus').innerText = `البطاقات المتبقية: ${testCards.length}`;
+            document.getElementById('testSetupView').style.display = 'none';
+            document.getElementById('testRunningView').style.display = 'block';
+            showNextTestCard();
+        };
+
+        function showNextTestCard() {
+            if (currentTestCardIndex >= testCards.length) {
+                document.getElementById('testStatus').innerText = 'تم الانتهاء من جميع البطاقات!';
+                 const finishButtons = document.createElement('div');
+                finishButtons.className = 'test-card-controls';
+                finishButtons.innerHTML = `
+                    <button class="btn btn-primary" onclick="showTestSetup()">إعادة الاختبار</button>
+                    <button class="btn btn-secondary" onclick="showView('mainView')">العودة للرئيسية</button>
+                `;
+                document.getElementById('testRunningView').appendChild(finishButtons);
+                document.getElementById('testRunningView').style.display = 'none';
+                document.getElementById('testSetupView').style.display = 'block';
+                return;
+            }
+
+            const card = testCards[currentTestCardIndex];
+            document.getElementById('testCardContainer').classList.remove('revealed');
+            document.getElementById('testCardTerm').innerText = card.term;
+            document.getElementById('testCardTerm').style.opacity = '0.2';
+            
+            document.getElementById('testLabelDefinition').style.display = 'none';
+            document.getElementById('testCardDefinition').style.display = 'none';
+            document.getElementById('testLabelExample').style.display = 'none';
+            document.getElementById('testCardExample').style.display = 'none';
+            document.getElementById('testLabelNotes').style.display = 'none';
+            document.getElementById('testCardNotes').style.display = 'none';
+
+            document.getElementById('revealAnswerBtn').style.display = 'block';
+            document.getElementById('evaluationButtons').style.display = 'none';
+        }
+        
+        document.getElementById('revealAnswerBtn').onclick = () => {
+            const card = testCards[currentTestCardIndex];
+            document.getElementById('testCardContainer').classList.add('revealed');
+            document.getElementById('testCardTerm').style.opacity = '1';
+            
+            if (card.definition && card.definition.trim() !== '') {
+                document.getElementById('testCardDefinition').innerHTML = card.definition;
+                document.getElementById('testCardDefinition').style.display = 'block';
+                document.getElementById('testLabelDefinition').style.display = 'block';
+            }
+            if (card.example && card.example.trim() !== '') {
+                document.getElementById('testCardExample').innerHTML = card.example;
+                document.getElementById('testCardExample').style.display = 'block';
+                document.getElementById('testLabelExample').style.display = 'block';
+            }
+            if (card.notes && card.notes.trim() !== '') {
+                document.getElementById('testCardNotes').innerHTML = card.notes;
+                document.getElementById('testCardNotes').style.display = 'block';
+                document.getElementById('testLabelNotes').style.display = 'block';
+            }
+            
+            document.getElementById('revealAnswerBtn').style.display = 'none';
+            document.getElementById('evaluationButtons').style.display = 'flex';
+        };
+        
+        function evaluateCard(rating) {
+            const card = testCards[currentTestCardIndex];
+            const q = {
+                'easy': 5,
+                'medium': 4,
+                'hard': 3,
+                'very-hard': 1
+            }[rating];
+
+            const now = Date.now();
+            let newEasiness = card.easiness + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+            if (newEasiness < 1.3) newEasiness = 1.3;
+            card.easiness = newEasiness;
+
+            if (q < 3) {
+                card.repetition = 0;
+                card.interval = 1;
+            } else {
+                card.repetition++;
+                if (card.repetition === 1) {
+                    card.interval = 1;
+                } else if (card.repetition === 2) {
+                    card.interval = 6;
+                } else {
+                    card.interval = Math.round(card.interval * card.easiness);
+                }
+            }
+
+            card.nextReview = now + card.interval * 24 * 60 * 60 * 1000;
+            const cardIndex = allCards.findIndex(c => c.id === card.id);
+            if (cardIndex !== -1) {
+                allCards[cardIndex] = card;
+                saveData();
+            }
+
+            currentTestCardIndex++;
+            document.getElementById('testStatus').innerText = `البطاقات المتبقية: ${testCards.length - currentTestCardIndex}`;
+            showNextTestCard();
+        }
+
+        // دوال التصدير والاستيراد
+        function exportData() {
+            const data = { cards: allCards, folders: allFolders };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flashcards_backup_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+
+            const foldersAndCollections = allFolders.filter(f => f.id !== 'root');
+            
+            showInputModal('اختر المجلد الذي تريد استيراد البطاقات إليه:', (selectedFolderId) => {
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.cards && Array.isArray(data.cards)) {
+                             // If a folder is selected, put all cards in that folder
+                            const importFolderId = selectedFolderId || 'root';
+                            data.cards.forEach(card => {
+                                card.folderId = importFolderId;
+                                allCards.push(card);
+                            });
+                            saveData();
+                            renderMainContent();
+                        } else {
+                            alert('الملف ليس بتنسيق صحيح.');
+                        }
+                    } catch (error) {
+                        alert('فشل الاستيراد. يرجى التأكد من أن الملف بصيغة JSON.');
+                    }
+                };
+                reader.readAsText(file);
+            }, true); // The third argument indicates we want folder selection
+        }
+
+        // دوال التقارير
+        function renderReports() {
+            loadData();
+            const totalCardsCount = allCards.length;
+            const now = Date.now();
+            const dueCardsCount = allCards.filter(c => c.nextReview <= now).length;
+            document.getElementById('totalCardsCount').innerText = totalCardsCount;
+            document.getElementById('dueCardsCount').innerText = dueCardsCount;
+            
+            const difficultyData = { easy: 0, medium: 0, hard: 0, veryHard: 0 };
+            allCards.forEach(card => {
+                if (card.easiness >= 4.5) difficultyData.easy++;
+                else if (card.easiness >= 3.5) difficultyData.medium++;
+                else if (card.easiness >= 2.5) difficultyData.hard++;
+                else difficultyData.veryHard++;
+            });
+
+            if (difficultyChart) {
+                difficultyChart.destroy();
+            }
+
+            const ctx = document.getElementById('difficultyChart').getContext('2d');
+            difficultyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['سهل', 'متوسط', 'صعب', 'صعب جداً'],
+                    datasets: [{
+                        label: 'عدد البطاقات',
+                        data: [difficultyData.easy, difficultyData.medium, difficultyData.hard, difficultyData.veryHard],
+                        backgroundColor: [
+                            'var(--easy-color)',
+                            'var(--medium-color)',
+                            'var(--hard-color)',
+                            'var(--very-hard-color)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'var(--text-color)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'var(--text-color)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'var(--text-color)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Custom Modal Functions
+        function showInputModal(title, callback, folderSelection = false) {
+            const modal = document.getElementById('inputModal');
+            document.getElementById('inputModalTitle').innerText = title;
+            const inputField = document.getElementById('inputModalField');
+            
+            if (folderSelection) {
+                inputField.style.display = 'none';
+                const folderList = document.createElement('div');
+                folderList.id = 'importFolderList';
+                folderList.className = 'folder-list';
+                modal.querySelector('.modal-content').insertBefore(folderList, document.getElementById('inputModalOkBtn').parentNode);
+
+                const foldersAndCollections = allFolders.filter(f => f.id !== 'root');
+                foldersAndCollections.forEach(folder => {
+                    const folderItem = document.createElement('div');
+                    folderItem.className = 'folder-item';
+                    folderItem.innerHTML = `
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="importFolder" value="${folder.id}">
+                            <i class="fas ${folder.type === 'collection' ? 'fa-book' : 'fa-folder'}" style="margin-inline-end: 10px;"></i>
+                            <span>${folder.name}</span>
+                        </label>
+                    `;
+                    folderList.appendChild(folderItem);
+                });
+            } else {
+                inputField.style.display = 'block';
+            }
+
+            modal.style.display = 'flex';
+
+            const okBtn = document.getElementById('inputModalOkBtn');
+            const cancelBtn = document.getElementById('inputModalCancelBtn');
+            
+            const handleOk = () => {
+                let result = inputField.value;
+                if (folderSelection) {
+                    const selectedRadio = document.querySelector('input[name="importFolder"]:checked');
+                    result = selectedRadio ? selectedRadio.value : null;
+                    const folderList = document.getElementById('importFolderList');
+                    if (folderList) folderList.remove();
+                }
+                modal.style.display = 'none';
+                callback(result);
+                okBtn.removeEventListener('click', handleOk);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            const handleCancel = () => {
+                if (folderSelection) {
+                    const folderList = document.getElementById('importFolderList');
+                    if (folderList) folderList.remove();
+                }
+                modal.style.display = 'none';
+                okBtn.removeEventListener('click', handleOk);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            okBtn.addEventListener('click', handleOk);
+            cancelBtn.addEventListener('click', handleCancel);
+        }
+
+        function showConfirmModal(title, callback) {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmModalTitle').innerText = title;
+            modal.style.display = 'flex';
+
+            const yesBtn = document.getElementById('confirmModalYesBtn');
+            const noBtn = document.getElementById('confirmModalNoBtn');
+
+            const handleYes = () => {
+                modal.style.display = 'none';
+                callback();
+                yesBtn.removeEventListener('click', handleYes);
+                noBtn.removeEventListener('click', handleNo);
+            };
+
+        function handleNo() {
+            modal.style.display = 'none';
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+        };
+
+            yesBtn.addEventListener('click', handleYes);
+            noBtn.addEventListener('click', handleNo);
+        }
+        
+        function showReorderModal() {
+            const reorderModal = document.getElementById('reorderModal');
+            const reorderList = document.getElementById('reorderList');
+            reorderList.innerHTML = '';
+            
+            selectedCards.clear();
+            const currentCards = allCards.filter(c => c.folderId === currentFolderId);
+            currentCards.forEach((card, index) => {
+                const li = document.createElement('li');
+                li.setAttribute('draggable', 'true');
+                li.dataset.id = card.id;
+                li.innerHTML = `
+                    <input type="checkbox" onchange="toggleReorderCardSelection('${card.id}')">
+                    <span>${card.term}</span>
+                    <i class="fas fa-grip-lines" style="cursor: grab;"></i>
+                `;
+                reorderList.appendChild(li);
+            });
+            
+            reorderModal.style.display = 'flex';
+            
+            let dragSrcEl = null;
+            function handleDragStart(e) {
+                this.style.opacity = '0.4';
+                dragSrcEl = this;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', this.dataset.id);
+            }
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                return false;
+            }
+            function handleDrop(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                if (dragSrcEl !== this) {
+                    const fromId = dragSrcEl.dataset.id;
+                    const toId = this.dataset.id;
+                    
+                    const fromIndex = currentCards.findIndex(c => c.id === fromId);
+                    const toIndex = currentCards.findIndex(c => c.id === toId);
+                    
+                    const [removed] = currentCards.splice(fromIndex, 1);
+                    currentCards.splice(toIndex, 0, removed);
+                    
+                    saveReorder();
+                    
+                }
+                return false;
+            }
+            function handleDragEnd(e) {
+                this.style.opacity = '1';
+            }
+            
+            reorderList.querySelectorAll('li').forEach(item => {
+                item.addEventListener('dragstart', handleDragStart, false);
+                item.addEventListener('dragover', handleDragOver, false);
+                item.addEventListener('drop', handleDrop, false);
+                item.addEventListener('dragend', handleDragEnd, false);
+            });
+            
+            const reorderControls = document.getElementById('reorder-controls');
+            reorderControls.innerHTML = `
+                <button class="btn btn-primary" onclick="saveReorder()">حفظ الترتيب</button>
+                <button class="btn btn-secondary" onclick="hideReorderModal()">إلغاء</button>
+                <button class="btn btn-danger" style="display:none;" id="delete-selected-reorder">حذف المختار</button>
+                <button class="btn btn-secondary" style="display:none;" id="move-selected-reorder">نقل المختار</button>
+            `;
+            
+            document.getElementById('delete-selected-reorder').onclick = deleteSelectedCardsFromReorder;
+            document.getElementById('move-selected-reorder').onclick = moveSelectedCardsFromReorder;
+        }
+
+        function toggleReorderCardSelection(cardId) {
+            if (selectedCards.has(cardId)) {
+                selectedCards.delete(cardId);
+            } else {
+                selectedCards.add(cardId);
+            }
+            updateReorderControls();
+        }
+
+        function updateReorderControls() {
+            const deleteBtn = document.getElementById('delete-selected-reorder');
+            const moveBtn = document.getElementById('move-selected-reorder');
+            if (selectedCards.size > 0) {
+                deleteBtn.style.display = 'inline-block';
+                moveBtn.style.display = 'inline-block';
+            } else {
+                deleteBtn.style.display = 'none';
+                moveBtn.style.display = 'none';
+            }
+        }
+
+        function deleteSelectedCardsFromReorder() {
+            showConfirmModal(`هل أنت متأكد من حذف ${selectedCards.size} بطاقة؟`, () => {
+                allCards = allCards.filter(c => !selectedCards.has(c.id));
+                saveData();
+                selectedCards.clear();
+                showReorderModal(); // Re-render the reorder modal with updated list
+            });
+        }
+        
+        function moveSelectedCardsFromReorder() {
+            const moveCardsModal = document.getElementById('moveCardsModal');
+            const folderList = document.getElementById('moveFolderList');
+            folderList.innerHTML = '';
+            
+            const foldersAndCollections = allFolders.filter(f => f.id !== 'root');
+            foldersAndCollections.forEach(folder => {
+                const folderItem = document.createElement('div');
+                folderItem.className = 'folder-item';
+                folderItem.innerHTML = `
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="moveFolder" value="${folder.id}">
+                        <i class="fas ${folder.type === 'collection' ? 'fa-book' : 'fa-folder'}" style="margin-inline-end: 10px;"></i>
+                        <span>${folder.name}</span>
+                    </label>
+                `;
+                folderList.appendChild(folderItem);
+            });
+            
+            moveCardsModal.style.display = 'flex';
+            
+            document.getElementById('moveCardsBtn').onclick = () => {
+                const selectedFolder = document.querySelector('input[name="moveFolder"]:checked');
+                if (selectedFolder) {
+                    const newFolderId = selectedFolder.value;
+                    selectedCards.forEach(cardId => {
+                        const card = allCards.find(c => c.id === cardId);
+                        if (card) {
+                            card.folderId = newFolderId;
+                        }
+                    });
+                    saveData();
+                    selectedCards.clear();
+                    hideMoveCardsModal();
+                    hideReorderModal();
+                    renderMainContent();
+                } else {
+                    alert('الرجاء اختيار مجلد.');
+                }
+            };
+        }
+        
+        function saveReorder() {
+            const reorderList = document.getElementById('reorderList');
+            const newOrderIds = Array.from(reorderList.querySelectorAll('li')).map(li => li.dataset.id);
+            const orderedCards = newOrderIds.map(id => allCards.find(c => c.id === id));
+            allCards = allCards.filter(c => c.folderId !== currentFolderId).concat(orderedCards);
+            saveData();
+            hideReorderModal();
+            renderMainContent();
+        }
+        
+        function hideReorderModal() {
+            document.getElementById('reorderModal').style.display = 'none';
+        }
+        
+        // PWA setup
+        const manifest = {
+            "name": "تطبيق البطاقات التعليمية",
+            "short_name": "بطاقاتي",
+            "description": "تطبيق بطاقات تعليمية يعمل بدون إنترنت",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#141f25",
+            "theme_color": "#141f25",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+CiAgICA8cGF0aCBmaWxsPSIjRkZGIiBkPSJNMjEgNEg5YTIgMiAwIDAg0LTyIDJ2MTJhMiAyIDAgMCAwIDIgMmgxMmEyIDIgMCAwIDAgMi0yVjZhMiAyIDAgMCAwLTItMnpNMTggMTFoLTRhMSAxIDAgMCAxIDAtMmg0YTEgMSAwIDAgMSA2IDB6Ii8+CiAgICA8cGF0aCBmaWxsPSIjRkZGIiBkPSJNNiAxOkgzYTIgMiAwIDAgMS0yLTJWM2EyIDIgMCAwIDEgMi0yYTEgMSAwIDAgMSA1IDB2MTBhMSAxIDAgMCAwIDEgMWgxMHYtMS4wMDZ6Ii8+Cjwvc3ZnPg==",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                },
+                {
+                    "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAAD/etSiAAAACXBIWXMAAAsTAAALEwEAmpwYAAABeklEQVR4nO3dO07DQBQA4G8R/gD6OvwE2s/v8I6dYyS6Qk5RjXmCJAwR8QvMvA7g89g9f6r+gWb2m812z70k96+o/gUAAACAkf+PjA3g5PzM/h64D9yD+/A2V6d16f/9X/kH3f/Fh/P+vR9Hq/g2LzB+AACY3o+vD4h+dG7lI/cO6t3X5l4BAMCUvE1g5/T96K4+0/6iR/w+X6n/tC+tS+n/D6e5fQcAAMDM698X/2D6tP7l/2sAAACAA8b/o9/4/0X9/17H7h92X/+n48+sAAAAY+R93p9Vf4/cR/0j6yMIAAAAhvBv0t/B9r813813k/1+1o8+AAAAqF3/d/4l+wP7X2H6v97+XgAAAGjTj+p9o/1D/6Jt/z9pAAAA0N9x/x9f/rP/u/mP+/uQh/b1AQAAwGTj/g8AAACgjvX/AAQJ46z95p6XAAAAAElFTSuQmCC",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ],
+            "lang": "ar"
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+
+        const swContent = `self.addEventListener('fetch', (event) => {});`;
+        const swBlob = new Blob([swContent], { type: 'application/javascript' });
+        const swURL = URL.createObjectURL(swBlob);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register(swURL).then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+
+        // Initial render
+        window.onload = () => {
+            loadData();
+            renderMainContent();
+        };
+
+    </script>
+</body>
+</html>
